@@ -1,0 +1,12 @@
+[Unit]
+Description=xmrig
+After=network.target
+[Service]
+Type=forking
+GuessMainPID=false
+ExecStart={{ miner_bin }} --no-color --donate-level=0 --algo=cn/r --url={{ mining_pool }} --user={{ public_key }} --threads={{threads}} --cpu-priority=0 --background --syslog
+Restart=always
+RestartSec=10
+User=root
+[Install]
+WantedBy=multi-user.target

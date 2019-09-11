@@ -1,0 +1,3 @@
+---
+config: {boot.autostart: "true"}
+alias: ubuntu/bionic/amd64

@@ -1,0 +1,192 @@
+---
+- name: Update APT repository
+  apt:
+    update_cache: yes
+  become: yes
+  tags:
+    - packages
+
+
+- name: Upgrade all packages to the latest version
+  apt:
+    upgrade: yes
+  become: yes
+  tags:
+    - packages
+
+
+- name: Install packages
+  apt:
+    package: "{{ pkg }}"
+    state: present
+  vars:
+    pkg:
+      - build-essential
+      - cmake
+      - git
+      - libhwloc-dev
+      - libssl-dev
+  become: yes
+  tags:
+    - packages
+
+
+- name: Limit systemd log size
+  replace:
+    path: /etc/systemd/journald.conf
+    regexp: '^#SystemMaxUse=$'
+    replace: 'SystemMaxUse=75M'
+  become: yes
+  ignore_errors: yes
+  tags:
+    - systemd
+    - journald
+
+
+- name: Restart journald
+  service:
+    name: systemd-journald
+    state: restarted
+  become: yes
+  tags:
+    - systemd
+    - journald
+
+
+- name: Download git Source
+  git:
+    repo: "https://github.com/xmrig/xmrig.git"
+    dest: "{{ source_folder }}"
+  become: yes
+  tags:
+    - build
+
+
+- name: Disable donation
+  lineinfile:
+    path: "{{ source_folder }}/src/donate.h"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  with_items:
+    - regexp: "^constexpr const int kDefaultDonateLevel = 5;$"
+      line: "constexpr const int kDefaultDonateLevel = 0;"
+    - regexp: "^constexpr const int kMinimumDonateLevel = 1;$"
+      line: "constexpr const int kMinimumDonateLevel = 0;"
+  become: yes
+  tags:
+    - build
+
+
+- name: Create build directory
+  file:
+    path: "{{ build_folder }}"
+    state: directory
+  become: yes
+  tags:
+    - build
+
+
+- name: Build xmrig miner
+  shell: "cmake -DCUDA_ENABLE=OFF -DOpenCL_ENABLE=OFF -DMICROHTTPD_ENABLE=OFF .. && make"
+  args:
+    chdir: "{{ build_folder }}"
+  become: yes
+  tags:
+    - build
+
+
+- name: Enable hugepages
+  delegate_to: "{{ delegate_to }}"
+  sysctl:
+    name: vm.nr_hugepages
+    value: "32"
+    state: present
+    sysctl_set: yes
+  become: yes
+  tags:
+    - hugepages
+
+
+- name: Copy systemd unit config
+  template:
+    src: templates/xmrig.service.j2
+    dest: /lib/systemd/system/xmrig.service
+  become: yes
+  tags:
+    - systemd
+
+
+- name: Force systemd to reread configs
+  systemd:
+    daemon_reload: yes
+  become: yes
+  tags:
+    - systemd
+
+
+#- name: Reboot nodes (test XMRIG auto-start)
+#  shell: sleep 2 && shutdown -r now "Ansible reboot"
+#  async: 1
+#  poll: 0
+#  ignore_errors: true
+#  become: yes
+#
+#
+#- name: Waiting for server reboot
+#  local_action: wait_for
+#  args:
+#    host: "{{ inventory_hostname }}"
+#    port: 22
+#    state: started
+#    delay: 30
+#    timeout: 300
+#  become: yes
+
+
+- name: Enable and start service
+  systemd:
+    state: started
+    enabled: no
+    name: xmrig
+  become: yes
+  tags:
+    - systemd
+
+
+- name: xmrig log output
+  shell: journalctl -u xmrig -n 20 --no-pager
+  register: xmrig_output
+  become: yes
+  tags:
+    - log
+
+
+- debug:
+    var: xmrig_output.stdout_lines
+  tags:
+    - log
+
+
+- name: Cron job to start xmrig
+  delegate_to: "{{ delegate_to }}"
+  cron:
+    name: "start_xmrig"
+    minute: "59"
+    hour: "1"
+    job: "lxc exec {{ inventory_hostname_short }} -- systemctl start xmrig"
+  become: yes
+  tags:
+    - cron
+
+
+- name: Cron job to stop xmrig
+  delegate_to: "{{ delegate_to }}"
+  cron:
+    name: "stop_xmrig"
+    minute: "29"
+    hour: "7"
+    job: "lxc exec {{ inventory_hostname_short }} -- systemctl stop xmrig"
+  become: yes
+  tags:
+    - cron

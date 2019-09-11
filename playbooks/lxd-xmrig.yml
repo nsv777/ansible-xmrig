@@ -1,0 +1,13 @@
+---
+- hosts: xmrig
+  gather_facts: no
+  roles:
+    - role: lxd-create-container
+      vars:
+        config:
+          boot.autostart: "true"
+          security.privileged: "true"
+        alias: ubuntu/disco/amd64
+    - role: xmrig
+      vars:
+        public_key: 47cZ6NxuhHfUuEUFshtNtnC4Ws5YEXuiqWwMNH7HN5LM2t8Y2zHzquxPGKLQTLXW1tHV7JHYFxWoBbryyRjTzTCFJMgNmej.06_01

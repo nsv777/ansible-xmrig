@@ -1,0 +1,9 @@
+---
+## Mining setting
+mining_pool:    "pool.minexmr.com:5555"
+max_cpu_usage:  "50"
+
+## Modify only if needed
+source_folder:  "/root/xmrig"
+build_folder:   "{{ source_folder }}/build"
+miner_bin:      "{{ build_folder }}/xmrig"

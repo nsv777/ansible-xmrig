@@ -1,0 +1,23 @@
+all:
+  children:
+    localhost:
+      vars:
+        ansible_connection: local
+        aur_user: aur_builder
+    linux:
+      children:
+        baremetal:
+          hosts:
+            lxd_host:
+              ansible_host: 10.1.65.1
+              ansible_user: jdoe
+        lxd_containers:
+          hosts:
+            xmrig:
+              ansible_host: lxd_host:xmrig
+              threads: "1"
+          vars:
+            delegate_to: lxd_host
+            ansible_connection: lxd
+  vars:
+    ansible_python_interpreter: /usr/bin/python3

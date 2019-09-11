@@ -1,0 +1,19 @@
+---
+- name: Create container
+  delegate_to: "{{ delegate_to }}"
+  lxd_container:
+    name: "{{ inventory_hostname_short }}"
+    state: started
+    config: "{{ config }}"
+    devices: "{{ devices  | default('{}') }}"
+    source:
+      type: image
+      mode: pull
+      server: https://images.linuxcontainers.org
+      protocol: lxd # if you get a 404, try setting protocol: simplestreams
+      alias: "{{ alias }}"
+    profiles: ["default"]
+    wait_for_ipv4_addresses: true
+    timeout: 300
+  tags:
+    - create
