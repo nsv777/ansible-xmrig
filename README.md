@@ -7,7 +7,8 @@ Currently tested on:
 
 ### 1 - Configuration
 
-Edit *configuration.yml*
+Create new hosts file using *hosts.yml.example*
+Update variables:
 
 `public_key` : SET YOUR XMR PUBLIC KEY
 

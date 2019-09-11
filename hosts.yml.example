@@ -19,5 +19,7 @@ all:
           vars:
             delegate_to: lxd_host
             ansible_connection: lxd
+            public_key: some_key
+            mining_pool: "pool.minexmr.com:5555"
   vars:
     ansible_python_interpreter: /usr/bin/python3

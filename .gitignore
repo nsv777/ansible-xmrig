@@ -3,4 +3,4 @@
 *.retry
 
 .idea
-!/hosts.yml
+hosts.yml
